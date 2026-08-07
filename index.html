@@ -36,6 +36,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
+        /* Container do Player de Vídeo Principal */
         .video-wrapper {
             width: 100%;
             aspect-ratio: 16 / 9;
@@ -48,6 +49,7 @@
             width: 100%; height: 100%; border: none;
         }
 
+        /* Painel Principal SOHO TV */
         .dashboard {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
@@ -85,6 +87,55 @@
         .artist { color: #aaa; font-size: 14px; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
         .title { color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; text-shadow: 1px 1px 2px #000; }
 
+        /* VU-Meters Horizontais */
+        .vu-horizontal-area {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 160px;
+            background: #151515;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        .vu-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 9px;
+            color: #aaa;
+            font-weight: bold;
+        }
+        .vu-bar-bg {
+            flex-grow: 1;
+            height: 6px;
+            background: #080808;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #222;
+        }
+        .vu-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #008000 60%, #ffff00 85%, #ff0000 100%);
+            transition: width 0.1s ease;
+        }
+
+        /* Waveform */
+        .soho-waveform {
+            height: 25px;
+            background-color: #080808;
+            position: relative;
+            border: 1px solid #111;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        #waveform-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        /* Bloco NEXT */
         .track-row {
             display: flex;
             border-top: 1px solid var(--border-color);
@@ -100,6 +151,7 @@
         .next-title { font-size: 14px; font-weight: bold; color: #ddd; text-transform: uppercase; }
         .next-artist { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
 
+        /* Histórico */
         .history-section { padding: 12px 15px; background-color: var(--panel-bg); }
         .history-title { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
         .history-list { list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto; }
@@ -110,7 +162,7 @@
 <body>
 
     <div class="container">
-        <!-- Player de Vídeo em Destaque rodando perfeitamente no GitHub -->
+        <!-- Player de Vídeo em Destaque rodando liso no GitHub -->
         <div class="video-wrapper">
             <iframe src="https://www.youtube.com/embed/_iZwhHWoNzE?autoplay=1&mute=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
@@ -126,6 +178,22 @@
                 <div class="info-track">
                     <div id="soho-artist" class="artist">CONECTANDO...</div>
                     <div id="soho-title" class="title">AGUARDANDO DADOS...</div>
+                    
+                    <div class="soho-waveform" id="waveform-container">
+                        <canvas id="waveform-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- VU-Meters Horizontais -->
+                <div class="vu-horizontal-area">
+                    <div class="vu-row">
+                        <span>L</span>
+                        <div class="vu-bar-bg"><div id="vu-fill-l" class="vu-bar-fill"></div></div>
+                    </div>
+                    <div class="vu-row">
+                        <span>R</span>
+                        <div class="vu-bar-bg"><div id="vu-fill-r" class="vu-bar-fill"></div></div>
+                    </div>
                 </div>
             </div>
 
@@ -149,60 +217,134 @@
     </div>
 
     <script>
-        // Substitua abaixo com o seu link exato do InfinityFree onde o Jazler joga os XMLs
-        const xmlNow = 'https://seu-usuario.infinityfreeapp.com/NowOnAir.xml';
-        const xmlNext = 'https://seu-usuario.infinityfreeapp.com/AirPlayNext.xml';
-        const xmlHistory = 'https://seu-usuario.infinityfreeapp.com/AirPlayHistory.xml';
+        // Visualizadores integrados
+        const canvas = document.getElementById('waveform-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('waveform-container');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function animateVisualizers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2.0;
+            ctx.strokeStyle = '#39ff14';
+            ctx.beginPath();
+            let time = Date.now() / 100;
+            for(let x = 0; x < canvas.width; x += 2) {
+                let y = (canvas.height / 2) + Math.sin(x * 0.05 + time) * (Math.sin(x * 0.02) * 6 + 3);
+                if(x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            let randL = Math.random() * 60 + 20;
+            let randR = Math.random() * 60 + 20;
+            document.getElementById('vu-fill-l').style.width = randL + '%';
+            document.getElementById('vu-fill-r').style.width = randR + '%';
+
+            requestAnimationFrame(animateVisualizers);
+        }
+        requestAnimationFrame(animateVisualizers);
+
+        // =========================================================================
+        // ATENÇÃO: COLOQUE AQUI A SUA URL DO INFINITYFREE OU DO SEU SERVIDOR
+        // Exemplo: 'https://seusite.infinityfreeapp.com' ou 'http://soho.ct.ws'
+        // =========================================================================
+        const BASE_URL = 'http://soho.ct.ws'; 
+
+        // Sistema de busca blindado que tenta múltiplos métodos para furar o bloqueio de CORS
+        async function fetchXML(filename) {
+            const ts = new Date().getTime();
+            const targetUrl = `${BASE_URL}/${filename}?t=${ts}`;
+            
+            const proxies = [
+                // 1º Tenta via AllOrigins (mais estável para XML)
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                // 2º Tenta via CORSProxy
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                // 3º Tenta via CorsAnywhere aberto
+                `https://cors-anywhere.herokuapp.com/${targetUrl}`
+            ];
+
+            for (let url of proxies) {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const text = await res.text();
+                        // Verifica se realmente retornou um XML e não página de erro
+                        if (text && text.includes('<') && text.includes('>')) {
+                            return text;
+                        }
+                    }
+                } catch (err) {
+                    // Tenta o próximo proxy da lista
+                }
+            }
+            return null;
+        }
 
         async function updateDashboard() {
-            const ts = new Date().getTime();
-            try {
-                const [resNow, resNext, resHistory] = await Promise.all([
-                    fetch(`${xmlNow}?t=${ts}`).catch(() => null),
-                    fetch(`${xmlNext}?t=${ts}`).catch(() => null),
-                    fetch(`${xmlHistory}?t=${ts}`).catch(() => null)
-                ]);
-                const parser = new DOMParser();
+            const parser = new DOMParser();
 
-                if (resNow && resNow.ok) {
-                    const xmlDoc = parser.parseFromString(await resNow.text(), "text/xml");
-                    const songNode = xmlDoc.querySelector('Event[status="happening"] Song');
-                    if (songNode) {
-                        document.getElementById('soho-title').textContent = songNode.getAttribute('title') || "---";
-                        document.getElementById('soho-artist').textContent = songNode.querySelector('Artist')?.getAttribute('name') || "---";
-                    }
+            // 1. Atualiza NowOnAir
+            const textNow = await fetchXML('NowOnAir.xml');
+            if (textNow) {
+                const xmlDoc = parser.parseFromString(textNow, "text/xml");
+                const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
+                if (songNode) {
+                    const title = songNode.getAttribute('title') || "---";
+                    const artistNode = songNode.querySelector('Artist');
+                    const artist = artistNode ? artistNode.getAttribute('name') : "---";
+                    document.getElementById('soho-title').textContent = title;
+                    document.getElementById('soho-artist').textContent = artist;
                 }
+            }
 
-                if (resNext && resNext.ok) {
-                    const xmlDocNext = parser.parseFromString(await resNext.text(), "text/xml");
-                    const nextSong = xmlDocNext.querySelector('Song');
-                    if (nextSong) {
-                        document.getElementById('next-title').textContent = nextSong.getAttribute('title') || "---";
-                        document.getElementById('next-artist').textContent = nextSong.querySelector('Artist')?.getAttribute('name') || "---";
-                    }
+            // 2. Atualiza Next
+            const textNext = await fetchXML('AirPlayNext.xml');
+            if (textNext) {
+                const xmlDocNext = parser.parseFromString(textNext, "text/xml");
+                const nextSong = xmlDocNext.querySelector('Song');
+                if (nextSong) {
+                    const nextTitle = nextSong.getAttribute('title') || "---";
+                    const nextArtistNode = nextSong.querySelector('Artist');
+                    const nextArtist = nextArtistNode ? nextArtistNode.getAttribute('name') : "---";
+                    document.getElementById('next-title').textContent = nextTitle;
+                    document.getElementById('next-artist').textContent = nextArtist;
                 }
+            }
 
-                if (resHistory && resHistory.ok) {
-                    const xmlDocHist = parser.parseFromString(await resHistory.text(), "text/xml");
-                    const songs = xmlDocHist.querySelectorAll('Song');
-                    const historyList = document.getElementById('history-list');
-                    if (songs.length > 0) {
-                        let html = '';
-                        let count = 0;
-                        for (let i = songs.length - 1; i >= 0 && count < 8; i--) {
-                            let s = songs[i];
-                            let t = s.getAttribute('title') || "---";
-                            let ar = s.querySelector('Artist')?.getAttribute('name') || "";
-                            let timeStr = s.querySelector('Info')?.getAttribute('StartTime') || "";
-                            html += `<li class="history-item"><span class="hist-time">${timeStr}</span><strong>${t}</strong> &nbsp;-&nbsp; ${ar}</li>`;
-                            count++;
-                        }
-                        historyList.innerHTML = html;
+            // 3. Atualiza Histórico
+            const textHistory = await fetchXML('AirPlayHistory.xml');
+            if (textHistory) {
+                const xmlDocHist = parser.parseFromString(textHistory, "text/xml");
+                const songs = xmlDocHist.querySelectorAll('Song');
+                const historyList = document.getElementById('history-list');
+                if (songs.length > 0) {
+                    let html = '';
+                    let count = 0;
+                    for (let i = songs.length - 1; i >= 0 && count < 8; i--) {
+                        let s = songs[i];
+                        let t = s.getAttribute('title') || "---";
+                        let arNode = s.querySelector('Artist');
+                        let ar = arNode ? arNode.getAttribute('name') : "";
+                        let infoNode = s.querySelector('Info');
+                        let timeStr = infoNode ? infoNode.getAttribute('StartTime') : "";
+                        html += `<li class="history-item"><span class="hist-time">${timeStr}</span><strong>${t}</strong> &nbsp;-&nbsp; ${ar}</li>`;
+                        count++;
                     }
+                    historyList.innerHTML = html;
                 }
-            } catch (e) {}
+            }
         }
-        setInterval(updateDashboard, 3000);
+
+        // Atualiza a cada 4 segundos
+        setInterval(updateDashboard, 4000);
         updateDashboard();
     </script>
 </body>
