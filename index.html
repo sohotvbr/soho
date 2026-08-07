@@ -36,7 +36,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        /* Container do Player de Vídeo Principal */
         .video-wrapper {
             width: 100%;
             aspect-ratio: 16 / 9;
@@ -49,7 +48,6 @@
             width: 100%; height: 100%; border: none;
         }
 
-        /* Painel Principal SOHO TV */
         .dashboard {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
@@ -79,38 +77,78 @@
             display: flex;
             background: linear-gradient(to bottom, #2a2a2a, #111);
             padding: 15px;
-            gap: 15px;
+            gap: 20px;
             align-items: center;
         }
 
-        .info-track { flex-grow: 1; overflow: hidden; }
+        .info-track { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; gap: 5px; }
         .artist { color: #aaa; font-size: 14px; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
         .title { color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; text-shadow: 1px 1px 2px #000; }
+
+        /* Waveform e Relógio */
+        .waveform-time-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .soho-waveform {
+            height: 35px;
+            background-color: #080808;
+            position: relative;
+            border: 1px solid #111;
+            flex-grow: 1;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+        .soho-waveform-progress {
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            background-color: rgba(211, 47, 47, 0.4); /* Barra vermelha deslizante */
+            width: 0%;
+            z-index: 1;
+            transition: width 1s linear;
+        }
+        #waveform-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
+        }
+
+        .soho-huge-time {
+            font-size: 38px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: var(--accent-green);
+            font-weight: normal;
+            line-height: 1;
+            flex-shrink: 0;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+        }
 
         /* VU-Meters Horizontais */
         .vu-horizontal-area {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            width: 160px;
+            gap: 8px;
+            width: 150px;
             background: #151515;
-            padding: 8px;
+            padding: 10px;
             border-radius: 4px;
             border: 1px solid #333;
+            flex-shrink: 0;
         }
         .vu-row {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 9px;
+            font-size: 10px;
             color: #aaa;
             font-weight: bold;
         }
         .vu-bar-bg {
             flex-grow: 1;
-            height: 6px;
+            height: 8px;
             background: #080808;
-            border-radius: 3px;
+            border-radius: 4px;
             overflow: hidden;
             position: relative;
             border: 1px solid #222;
@@ -118,24 +156,10 @@
         .vu-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(to right, #008000 60%, #ffff00 85%, #ff0000 100%);
+            background: linear-gradient(to right, #008000 50%, #ffff00 80%, #ff0000 100%);
             transition: width 0.1s ease;
         }
 
-        /* Waveform */
-        .soho-waveform {
-            height: 25px;
-            background-color: #080808;
-            position: relative;
-            border: 1px solid #111;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        #waveform-canvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        }
-
-        /* Bloco NEXT */
         .track-row {
             display: flex;
             border-top: 1px solid var(--border-color);
@@ -151,7 +175,6 @@
         .next-title { font-size: 14px; font-weight: bold; color: #ddd; text-transform: uppercase; }
         .next-artist { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
 
-        /* Histórico */
         .history-section { padding: 12px 15px; background-color: var(--panel-bg); }
         .history-title { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
         .history-list { list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto; }
@@ -162,7 +185,7 @@
 <body>
 
     <div class="container">
-        <!-- Player de Vídeo em Destaque rodando liso no GitHub --> 
+        <!-- Player de Vídeo -->
         <div class="video-wrapper">
             <iframe src="https://www.youtube.com/embed/F_QXRKpSAfg?autoplay=1&mute=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
@@ -179,8 +202,12 @@
                     <div id="soho-artist" class="artist">CONECTANDO...</div>
                     <div id="soho-title" class="title">AGUARDANDO DADOS...</div>
                     
-                    <div class="soho-waveform" id="waveform-container">
-                        <canvas id="waveform-canvas"></canvas>
+                    <div class="waveform-time-container">
+                        <div class="soho-waveform" id="waveform-container">
+                            <div id="soho-progress" class="soho-waveform-progress"></div>
+                            <canvas id="waveform-canvas"></canvas>
+                        </div>
+                        <div id="soho-time" class="soho-huge-time">00:00</div>
                     </div>
                 </div>
 
@@ -216,8 +243,66 @@
         </div>
     </div>
 
-<script>
-        // Alvará de soltura: corsproxy.io engana o guarda do InfinityFree
+    <script>
+        // Animações dinâmicas do Waveform e VU (já que o YT não permite leitura de áudio real)
+        const canvas = document.getElementById('waveform-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('waveform-container');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function animateVisualizers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2.0;
+            ctx.strokeStyle = '#39ff14';
+            ctx.beginPath();
+            let time = Date.now() / 150;
+            for(let x = 0; x < canvas.width; x += 3) {
+                let y = (canvas.height / 2) + Math.sin(x * 0.05 + time) * (Math.sin(x * 0.01) * 10 + 2);
+                if(x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            let randL = Math.random() * 50 + 30;
+            let randR = Math.random() * 50 + 30;
+            document.getElementById('vu-fill-l').style.width = randL + '%';
+            document.getElementById('vu-fill-r').style.width = randR + '%';
+
+            requestAnimationFrame(animateVisualizers);
+        }
+        requestAnimationFrame(animateVisualizers);
+
+        // Lógica REAIS de Temporizador e Progresso baseados no Jazler
+        let currentSongTitle = "";
+        let trackDurationSeconds = 0;
+        let trackStartTimestamp = 0;
+
+        function updateTimer() {
+            if (trackDurationSeconds === 0) return;
+            
+            let elapsedSeconds = Math.floor((Date.now() - trackStartTimestamp) / 1000);
+            
+            // Trava o tempo se passar do tamanho da música
+            if (elapsedSeconds < 0) elapsedSeconds = 0;
+            if (elapsedSeconds > trackDurationSeconds) elapsedSeconds = trackDurationSeconds;
+
+            let m = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+            let s = (elapsedSeconds % 60).toString().padStart(2, '0');
+            
+            document.getElementById('soho-time').textContent = `${m}:${s}`;
+            document.getElementById('soho-progress').style.width = `${(elapsedSeconds / trackDurationSeconds) * 100}%`;
+        }
+        // Atualiza o relógio todo segundo
+        setInterval(updateTimer, 1000);
+
+
+        // Alvará de soltura: corsproxy.io
         const proxy = 'https://corsproxy.io/?';
         const urlNow = 'http://soho.ct.ws/NowOnAir.xml';
         const urlNext = 'http://soho.ct.ws/AirPlayNext.xml';
@@ -226,7 +311,6 @@
         async function updateDashboard() {
             const ts = new Date().getTime();
             try {
-                // Monta o link disfarçado com o carimbo de tempo para não cachear
                 const fetchNow = fetch(proxy + encodeURIComponent(`${urlNow}?t=${ts}`)).catch(() => null);
                 const fetchNext = fetch(proxy + encodeURIComponent(`${urlNext}?t=${ts}`)).catch(() => null);
                 const fetchHistory = fetch(proxy + encodeURIComponent(`${urlHistory}?t=${ts}`)).catch(() => null);
@@ -239,8 +323,27 @@
                     const xmlDoc = parser.parseFromString(await resNow.text(), "text/xml");
                     const songNode = xmlDoc.querySelector('Event[status="happening"] Song');
                     if (songNode) {
-                        document.getElementById('soho-title').textContent = songNode.getAttribute('title') || "---";
+                        let newTitle = songNode.getAttribute('title') || "---";
+                        document.getElementById('soho-title').textContent = newTitle;
                         document.getElementById('soho-artist').textContent = songNode.querySelector('Artist')?.getAttribute('name') || "---";
+                        
+                        // Detecção de música nova para resetar o contador!
+                        if (newTitle !== currentSongTitle) {
+                            currentSongTitle = newTitle;
+                            trackStartTimestamp = Date.now(); // Inicia o contador agora
+                            
+                            // Tenta ler o tempo total do XML (ex: runTime="03:24")
+                            let mediaNode = songNode.querySelector('Media');
+                            if (mediaNode) {
+                                let runTime = mediaNode.getAttribute('runTime'); // formato "MM:SS"
+                                if (runTime) {
+                                    let timeParts = runTime.split(':');
+                                    if (timeParts.length === 2) {
+                                        trackDurationSeconds = (parseInt(timeParts[0]) * 60) + parseInt(timeParts[1]);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -273,20 +376,11 @@
                         historyList.innerHTML = html;
                     }
                 }
-            } catch (e) {
-                console.error("Guarda do InfinityFree ainda resistindo...", e);
-            }
+            } catch (e) { }
         }
         
-        // Atualiza a cada 3 segundos
         setInterval(updateDashboard, 3000);
         updateDashboard();
     </script>
 </body>
 </html>
-
-
-
-
-
-
