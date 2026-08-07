@@ -163,7 +163,6 @@
             width: 100%;
         }
 
-        /* Janela de Vídeo Real incorporada via IFrame Direto do YouTube */
         .video-container {
             width: 110px;
             height: 68px;
@@ -179,8 +178,11 @@
         }
 
         .video-container iframe {
-            width: 100%;
-            height: 100%;
+            width: 300%;
+            height: 300%;
+            position: absolute;
+            top: -100%;
+            left: -100%;
             border: none;
             pointer-events: auto;
         }
@@ -226,61 +228,22 @@
         }
 
         .soho-waveform {
-            height: 30px;
+            height: 6px;
             background-color: #080808;
             position: relative;
             border: 1px solid #111;
-            overflow: hidden;
             margin-top: 5px;
         }
         .soho-waveform-progress {
-            position: absolute;
-            top: 0; left: 0; bottom: 0;
-            background-color: rgba(139, 0, 0, 0.4); 
-            width: 0%;
-        }
-        #waveform-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 2;
+            background-color: var(--accent-green); 
+            width: 100%;
+            height: 100%;
         }
 
         .soho-right-side {
             display: flex;
             background-color: #1a1a1a;
             flex-shrink: 0;
-        }
-
-        .soho-vumeter-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-right: 1px solid #111;
-            padding: 4px;
-            background-color: #151515;
-            width: 25px;
-        }
-        .soho-vumeter-stereo {
-            display: flex;
-            gap: 2px;
-            width: 100%;
-            flex-grow: 1;
-        }
-        .vu-channel {
-            flex: 1;
-            background: linear-gradient(to top, #008000 60%, #ffff00 85%, #ff0000 100%);
-            position: relative;
-            border-radius: 1px;
-        }
-        .vu-mask {
-            position: absolute; top: 0; left: 0; right: 0;
-            background: #151515;
-            width: 100%; height: 100%; 
-        }
-        .vu-labels {
-            display: flex; justify-content: space-between; width: 100%; font-size: 7px; color: #777; margin-top: 2px;
         }
 
         .soho-clock-area {
@@ -351,7 +314,6 @@
             <div class="soho-top-bar">
                 <div class="soho-top-bar-left">SOHO<span>TV</span></div>
                 <div class="soho-top-bar-right">
-                    <a href="https://www.youtube.com/watch?v=7wjk-c8pd-vzyc-gh4t-acy8" target="_blank" class="soho-btn">ABRIR LIVE</a>
                     <button class="soho-btn status-live">LIVE</button>
                 </div>
             </div>
@@ -362,9 +324,9 @@
                 <div class="soho-main-display">
                     <div class="soho-track-header">
                         <div class="soho-track-icon-text">
-                            <!-- Miniatura incorporada direta via iframe do YouTube com autoplay -->
+                            <!-- Player real do YouTube embutido com suporte a live stream -->
                             <div class="video-container">
-                                <iframe src="https://www.youtube.com/embed/7wjk-c8pd-vzyc-gh4t-acy8?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+                                <iframe src="https://www.youtube.com/embed/7wjk-c8pd-vzyc-gh4t-acy8?autoplay=1&mute=0&controls=0&playsinline=1" allow="autoplay; encrypted-media"></iframe>
                             </div>
                             
                             <div class="soho-track-text">
@@ -381,20 +343,11 @@
                     </div>
 
                     <div class="soho-waveform" id="waveform-container">
-                        <div id="soho-progress" class="soho-waveform-progress"></div>
-                        <canvas id="waveform-canvas"></canvas>
+                        <div class="soho-waveform-progress"></div>
                     </div>
                 </div>
 
                 <div class="soho-right-side">
-                    <div class="soho-vumeter-container">
-                        <div class="soho-vumeter-stereo">
-                            <div class="vu-channel"><div id="vu-mask-l" class="vu-mask"></div></div>
-                            <div class="vu-channel"><div id="vu-mask-r" class="vu-mask"></div></div>
-                        </div>
-                        <div class="vu-labels"><span>L</span><span>R</span></div>
-                    </div>
-
                     <div class="soho-clock-area">
                         <div class="soho-clock-circle">
                             <span id="clock-day" class="soho-clock-day">dia</span>
@@ -440,40 +393,6 @@
     </div>
 
     <script>
-        // Gráfico e VU-meters animados permanentemente indicando som e vídeo no ar
-        const canvas = document.getElementById('waveform-canvas');
-        const ctx = canvas.getContext('2d');
-        const canvasContainer = document.getElementById('waveform-container');
-
-        function resizeCanvas() {
-            canvas.width = canvasContainer.clientWidth;
-            canvas.height = canvasContainer.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        function updateVisualizers() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.lineWidth = 2.0;
-            ctx.strokeStyle = '#39ff14';
-            ctx.beginPath();
-            let time = Date.now() / 100;
-            for(let x = 0; x < canvas.width; x += 2) {
-                let y = (canvas.height / 2) + Math.sin(x * 0.05 + time) * (Math.sin(x * 0.02) * 8 + 4);
-                if(x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-
-            let randL = Math.random() * 40 + 30;
-            let randR = Math.random() * 40 + 30;
-            document.getElementById('vu-mask-l').style.height = (100 - randL) + '%';
-            document.getElementById('vu-mask-r').style.height = (100 - randR) + '%';
-
-            requestAnimationFrame(updateVisualizers);
-        }
-        requestAnimationFrame(updateVisualizers);
-
         function updateClock() {
             const now = new Date();
             const days = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -484,10 +403,10 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Leitura dinâmica contínua dos XMLs do Jazler SOHO TV
-        const xmlNow = 'NowOnAir.xml';
-        const xmlNext = 'AirPlayNext.xml';
-        const xmlHistory = 'AirPlayHistory.xml';
+        // ATENÇÃO: Altere abaixo para o link onde o Jazler joga os XMLs (ex: sua hospedagem anterior)
+        const xmlNow = 'https://soho.ct.ws/NowOnAir.xml';
+        const xmlNext = 'https://soho.ct.ws/AirPlayNext.xml';
+        const xmlHistory = 'https://soho.ct.ws/AirPlayHistory.xml';
 
         async function updateDashboard() {
             const ts = new Date().getTime();
