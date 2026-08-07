@@ -217,134 +217,69 @@
     </div>
 
     <script>
-        // Visualizadores integrados
-        const canvas = document.getElementById('waveform-canvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('waveform-container');
-
-        function resizeCanvas() {
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        function animateVisualizers() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.lineWidth = 2.0;
-            ctx.strokeStyle = '#39ff14';
-            ctx.beginPath();
-            let time = Date.now() / 100;
-            for(let x = 0; x < canvas.width; x += 2) {
-                let y = (canvas.height / 2) + Math.sin(x * 0.05 + time) * (Math.sin(x * 0.02) * 6 + 3);
-                if(x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-
-            let randL = Math.random() * 60 + 20;
-            let randR = Math.random() * 60 + 20;
-            document.getElementById('vu-fill-l').style.width = randL + '%';
-            document.getElementById('vu-fill-r').style.width = randR + '%';
-
-            requestAnimationFrame(animateVisualizers);
-        }
-        requestAnimationFrame(animateVisualizers);
-
-        // =========================================================================
-        // ATENÇÃO: COLOQUE AQUI A SUA URL DO INFINITYFREE OU DO SEU SERVIDOR
-        // Exemplo: 'https://seusite.infinityfreeapp.com' ou 'http://soho.ct.ws'
-        // =========================================================================
-        const BASE_URL = 'https://soho.ct.ws/'; 
-
-        // Sistema de busca blindado que tenta múltiplos métodos para furar o bloqueio de CORS
-        async function fetchXML(filename) {
-            const ts = new Date().getTime();
-            const targetUrl = `${BASE_URL}/${filename}?t=${ts}`;
-            
-            const proxies = [
-                // 1º Tenta via AllOrigins (mais estável para XML)
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-                // 2º Tenta via CORSProxy
-                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-                // 3º Tenta via CorsAnywhere aberto
-                `https://cors-anywhere.herokuapp.com/${targetUrl}`
-            ];
-
-            for (let url of proxies) {
-                try {
-                    const res = await fetch(url);
-                    if (res.ok) {
-                        const text = await res.text();
-                        // Verifica se realmente retornou um XML e não página de erro
-                        if (text && text.includes('<') && text.includes('>')) {
-                            return text;
-                        }
-                    }
-                } catch (err) {
-                    // Tenta o próximo proxy da lista
-                }
-            }
-            return null;
-        }
+        // Alvará de soltura: corsproxy.io engana o guarda do InfinityFree
+        const proxy = 'https://corsproxy.io/?';
+        const urlNow = 'http://soho.ct.ws/NowOnAir.xml';
+        const urlNext = 'http://soho.ct.ws/AirPlayNext.xml';
+        const urlHistory = 'http://soho.ct.ws/AirPlayHistory.xml';
 
         async function updateDashboard() {
-            const parser = new DOMParser();
+            const ts = new Date().getTime();
+            try {
+                // Monta o link disfarçado com o carimbo de tempo para não cachear
+                const fetchNow = fetch(proxy + encodeURIComponent(`${urlNow}?t=${ts}`)).catch(() => null);
+                const fetchNext = fetch(proxy + encodeURIComponent(`${urlNext}?t=${ts}`)).catch(() => null);
+                const fetchHistory = fetch(proxy + encodeURIComponent(`${urlHistory}?t=${ts}`)).catch(() => null);
 
-            // 1. Atualiza NowOnAir
-            const textNow = await fetchXML('NowOnAir.xml');
-            if (textNow) {
-                const xmlDoc = parser.parseFromString(textNow, "text/xml");
-                const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
-                if (songNode) {
-                    const title = songNode.getAttribute('title') || "---";
-                    const artistNode = songNode.querySelector('Artist');
-                    const artist = artistNode ? artistNode.getAttribute('name') : "---";
-                    document.getElementById('soho-title').textContent = title;
-                    document.getElementById('soho-artist').textContent = artist;
-                }
-            }
+                const [resNow, resNext, resHistory] = await Promise.all([fetchNow, fetchNext, fetchHistory]);
+                const parser = new DOMParser();
 
-            // 2. Atualiza Next
-            const textNext = await fetchXML('AirPlayNext.xml');
-            if (textNext) {
-                const xmlDocNext = parser.parseFromString(textNext, "text/xml");
-                const nextSong = xmlDocNext.querySelector('Song');
-                if (nextSong) {
-                    const nextTitle = nextSong.getAttribute('title') || "---";
-                    const nextArtistNode = nextSong.querySelector('Artist');
-                    const nextArtist = nextArtistNode ? nextArtistNode.getAttribute('name') : "---";
-                    document.getElementById('next-title').textContent = nextTitle;
-                    document.getElementById('next-artist').textContent = nextArtist;
-                }
-            }
-
-            // 3. Atualiza Histórico
-            const textHistory = await fetchXML('AirPlayHistory.xml');
-            if (textHistory) {
-                const xmlDocHist = parser.parseFromString(textHistory, "text/xml");
-                const songs = xmlDocHist.querySelectorAll('Song');
-                const historyList = document.getElementById('history-list');
-                if (songs.length > 0) {
-                    let html = '';
-                    let count = 0;
-                    for (let i = songs.length - 1; i >= 0 && count < 8; i--) {
-                        let s = songs[i];
-                        let t = s.getAttribute('title') || "---";
-                        let arNode = s.querySelector('Artist');
-                        let ar = arNode ? arNode.getAttribute('name') : "";
-                        let infoNode = s.querySelector('Info');
-                        let timeStr = infoNode ? infoNode.getAttribute('StartTime') : "";
-                        html += `<li class="history-item"><span class="hist-time">${timeStr}</span><strong>${t}</strong> &nbsp;-&nbsp; ${ar}</li>`;
-                        count++;
+                // Lendo a Música Atual
+                if (resNow && resNow.ok) {
+                    const xmlDoc = parser.parseFromString(await resNow.text(), "text/xml");
+                    const songNode = xmlDoc.querySelector('Event[status="happening"] Song');
+                    if (songNode) {
+                        document.getElementById('soho-title').textContent = songNode.getAttribute('title') || "---";
+                        document.getElementById('soho-artist').textContent = songNode.querySelector('Artist')?.getAttribute('name') || "---";
                     }
-                    historyList.innerHTML = html;
                 }
+
+                // Lendo a Próxima Música
+                if (resNext && resNext.ok) {
+                    const xmlDocNext = parser.parseFromString(await resNext.text(), "text/xml");
+                    const nextSong = xmlDocNext.querySelector('Song');
+                    if (nextSong) {
+                        document.getElementById('next-title').textContent = nextSong.getAttribute('title') || "---";
+                        document.getElementById('next-artist').textContent = nextSong.querySelector('Artist')?.getAttribute('name') || "---";
+                    }
+                }
+
+                // Lendo o Histórico
+                if (resHistory && resHistory.ok) {
+                    const xmlDocHist = parser.parseFromString(await resHistory.text(), "text/xml");
+                    const songs = xmlDocHist.querySelectorAll('Song');
+                    const historyList = document.getElementById('history-list');
+                    if (songs.length > 0) {
+                        let html = '';
+                        let count = 0;
+                        for (let i = songs.length - 1; i >= 0 && count < 8; i--) {
+                            let s = songs[i];
+                            let t = s.getAttribute('title') || "---";
+                            let ar = s.querySelector('Artist')?.getAttribute('name') || "";
+                            let timeStr = s.querySelector('Info')?.getAttribute('StartTime') || "";
+                            html += `<li class="history-item"><span class="hist-time">${timeStr}</span><strong>${t}</strong> &nbsp;-&nbsp; ${ar}</li>`;
+                            count++;
+                        }
+                        historyList.innerHTML = html;
+                    }
+                }
+            } catch (e) {
+                console.error("Guarda do InfinityFree ainda resistindo...", e);
             }
         }
-
-        // Atualiza a cada 4 segundos
-        setInterval(updateDashboard, 4000);
+        
+        // Atualiza a cada 3 segundos
+        setInterval(updateDashboard, 3000);
         updateDashboard();
     </script>
 </body>
