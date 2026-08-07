@@ -255,7 +255,7 @@
         // ATENÇÃO: COLOQUE AQUI A SUA URL DO INFINITYFREE OU DO SEU SERVIDOR
         // Exemplo: 'https://seusite.infinityfreeapp.com' ou 'http://soho.ct.ws'
         // =========================================================================
-        const BASE_URL = 'http://soho.ct.ws'; 
+        const BASE_URL = 'https://soho.ct.ws'; 
 
         // Sistema de busca blindado que tenta múltiplos métodos para furar o bloqueio de CORS
         async function fetchXML(filename) {
@@ -292,7 +292,7 @@
             const parser = new DOMParser();
 
             // 1. Atualiza NowOnAir
-            const textNow = await fetchXML('https://soho.ct.ws/NowOnAir.xml');
+            const textNow = await fetchXML('NowOnAir.xml');
             if (textNow) {
                 const xmlDoc = parser.parseFromString(textNow, "text/xml");
                 const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
@@ -306,7 +306,7 @@
             }
 
             // 2. Atualiza Next
-            const textNext = await fetchXML('https://soho.ct.ws/AirPlayNext.xml');
+            const textNext = await fetchXML('AirPlayNext.xml');
             if (textNext) {
                 const xmlDocNext = parser.parseFromString(textNext, "text/xml");
                 const nextSong = xmlDocNext.querySelector('Song');
@@ -320,7 +320,7 @@
             }
 
             // 3. Atualiza Histórico
-            const textHistory = await fetchXML('https://soho.ct.ws/AirPlayHistory.xml');
+            const textHistory = await fetchXML('AirPlayHistory.xml');
             if (textHistory) {
                 const xmlDocHist = parser.parseFromString(textHistory, "text/xml");
                 const songs = xmlDocHist.querySelectorAll('Song');
