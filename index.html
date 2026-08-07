@@ -5,214 +5,305 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOHO TV - WebTV Player</title>
     <style>
-        body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        
-        .video-wrapper {
+        :root {
+            --bg-dark: #000000;
+            --panel-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-red: #d32f2f;
+            --accent-green: #39ff14;
+            --border-color: #333333;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .container {
             width: 100%;
             max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        /* Container do Player de Vídeo Principal */
+        .video-wrapper {
+            width: 100%;
             aspect-ratio: 16 / 9;
             background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
         }
         .video-wrapper iframe {
             width: 100%; height: 100%; border: none;
         }
 
-        .soho-dashboard {
-            width: 100%;
-            max-width: 950px;
-            background: #1e1e1e;
-            padding: 20px;
-            border-top: 4px solid #d32f2f;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
-        }
-
-        .info-track { flex-grow: 1; }
-        .artist { color: #aaa; font-size: 14px; text-transform: uppercase; font-weight: bold; }
-        .title { color: #fff; font-size: 28px; font-weight: 900; text-transform: uppercase; }
-        
-        .status-badge {
-            background: #d32f2f;
-            padding: 8px 15px;
+        /* Painel Principal SOHO TV */
+        .dashboard {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            font-weight: bold;
-            font-size: 12px;
-            margin-left: 20px;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Player oficial com o ID da sua Live -->
-    <div class="video-wrapper">
-        <iframe src="https://www.youtube.com/embed/_iZwhHWoNzE?autoplay=1&mute=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-
-    <!-- Painel SOHO TV -->
-    <div class="soho-dashboard">
-        <div class="info-track">
-            <div id="soho-artist" class="artist">CARREGANDO...</div>
-            <div id="soho-title" class="title">AGUARDANDO DADOS...</div>
-        </div>
-        <div class="status-badge">AO VIVO</div>
-    </div>
-
-    <script>
-        const xmlNow = 'https://soho.ct.ws/NowOnAir.xml';
-
-        async function updateDashboard() {
-            const ts = new Date().getTime();
-            try {
-                const response = await fetch(`${xmlNow}?t=${ts}`);
-                const data = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data, "text/xml");
-                
-                const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
-                if (songNode) {
-                    const title = songNode.getAttribute('title') || "---";
-                    const artist = songNode.getElementsByTagName('Artist')[0]?.getAttribute('name') || "---";
-                    
-                    document.getElementById('soho-title').textContent = title;
-                    document.getElementById('soho-artist').textContent = artist;
-                }
-            } catch (e) {
-                console.log("Sincronizando com Jazler...");
-            }
-        }
-        setInterval(updateDashboard, 3000);
-        updateDashboard();
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOHO TV - WebTV Player</title>
-    <style>
-        body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        
-        /* Container principal da WebTV */
-        .video-wrapper {
-            width: 100%;
-            max-width: 950px;
-            aspect-ratio: 16 / 9;
-            background: #111;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             overflow: hidden;
-            border-bottom: 2px solid #222;
-        }
-
-        /* Tela de Preview / Fallback elegante se o embed falhar */
-        .tv-fallback {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1a1a1a, #050505);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-            z-index: 2;
         }
 
-        .tv-fallback h2 { color: #fff; font-size: 24px; margin: 0 0 10px 0; letter-spacing: 1px; }
-        .tv-fallback p { color: #888; font-size: 14px; margin: 0 0 20px 0; }
-        
-        .watch-btn {
-            background-color: #d32f2f;
-            color: #fff;
-            padding: 12px 25px;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
-            transition: background 0.2s;
-        }
-        .watch-btn:hover { background-color: #ff3b3b; }
-
-        /* Painel de Controle SOHO TV */
-        .soho-dashboard {
-            width: 100%;
-            max-width: 950px;
-            background: #1e1e1e;
-            padding: 20px;
-            border-top: 4px solid #d32f2f;
+        .soho-top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-sizing: border-box;
+            background-color: #151515;
+            padding: 8px 15px;
+            border-bottom: 1px solid #333;
+        }
+        .soho-logo { font-weight: 900; font-size: 16px; color: #fff; }
+        .soho-logo span { color: var(--accent-red); font-size: 12px; font-weight: normal; }
+        
+        .status-live {
+            background: linear-gradient(to bottom, #008000, #004d00);
+            color: #fff; padding: 4px 12px; font-size: 11px; font-weight: bold; border-radius: 2px;
+        }
+
+        .soho-player-body {
+            display: flex;
+            background: linear-gradient(to bottom, #2a2a2a, #111);
+            padding: 15px;
+            gap: 15px;
+            align-items: center;
         }
 
         .info-track { flex-grow: 1; overflow: hidden; }
-        .artist { color: #aaa; font-size: 14px; text-transform: uppercase; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .title { color: #fff; font-size: 26px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        .status-badge {
-            background: #d32f2f;
-            color: #fff;
-            padding: 6px 15px;
+        .artist { color: #aaa; font-size: 14px; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+        .title { color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; text-shadow: 1px 1px 2px #000; }
+
+        /* VU-Meters Horizontais Charmosos */
+        .vu-horizontal-area {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 160px;
+            background: #151515;
+            padding: 8px;
             border-radius: 4px;
-            font-weight: bold;
-            font-size: 12px;
-            flex-shrink: 0;
-            margin-left: 15px;
+            border: 1px solid #333;
         }
+        .vu-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 9px;
+            color: #aaa;
+            font-weight: bold;
+        }
+        .vu-bar-bg {
+            flex-grow: 1;
+            height: 6px;
+            background: #080808;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #222;
+        }
+        .vu-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #008000 60%, #ffff00 85%, #ff0000 100%);
+            transition: width 0.1s ease;
+        }
+
+        /* Waveform Estilizado */
+        .soho-waveform {
+            height: 25px;
+            background-color: #080808;
+            position: relative;
+            border: 1px solid #111;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        #waveform-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        /* Bloco NEXT */
+        .track-row {
+            display: flex;
+            border-top: 1px solid var(--border-color);
+            background-color: #252525;
+            overflow: hidden;
+        }
+        .badge {
+            color: white; writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);
+            padding: 10px 6px; font-weight: 900; font-size: 11px; letter-spacing: 2px;
+            background-color: #7a1515; display: flex; align-items: center; justify-content: center; width: 20px;
+        }
+        .next-info { padding: 10px 15px; flex-grow: 1; }
+        .next-title { font-size: 14px; font-weight: bold; color: #ddd; text-transform: uppercase; }
+        .next-artist { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+
+        /* Histórico */
+        .history-section { padding: 12px 15px; background-color: var(--panel-bg); }
+        .history-title { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
+        .history-list { list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto; }
+        .history-item { display: flex; align-items: center; padding: 4px 0; border-bottom: 1px dashed #333; font-size: 11px; color: #ccc; }
+        .hist-time { color: var(--accent-green); margin-right: 8px; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <!-- Visor da WebTV com tela de conexão limpa para evitar bloqueio de ID do YouTube -->
-    <div class="video-wrapper">
-        <div class="tv-fallback">
-            <h2>SOHO TV AO VIVO</h2>
-            <p>Transmissão oficial sincronizada com o encoder</p>
-            <a href="https://www.youtube.com/watch?v=7wjk-c8pd-vzyc-gh4t-acy8" target="_blank" class="watch-btn">Assistir Transmissão Completa</a>
+    <div class="container">
+        <!-- Player de Vídeo em Destaque -->
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/_iZwhHWoNzE?autoplay=1&mute=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
-    </div>
 
-    <!-- Painel de metadados do SOHO TV -->
-    <div class="soho-dashboard">
-        <div class="info-track">
-            <div id="soho-artist" class="artist">AGUARDANDO SINAL...</div>
-            <div id="soho-title" class="title">SOHO TV NO AR</div>
+        <!-- Painel de Controle SOHO TV -->
+        <div class="dashboard">
+            <div class="soho-top-bar">
+                <div class="soho-logo">SOHO<span>TV</span></div>
+                <div class="status-live">AO VIVO</div>
+            </div>
+
+            <div class="soho-player-body">
+                <div class="info-track">
+                    <div id="soho-artist" class="artist">AGUARDANDO SINAL...</div>
+                    <div id="soho-title" class="title">SOHO TV NO AR</div>
+                    
+                    <div class="soho-waveform" id="waveform-container">
+                        <canvas id="waveform-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- VU-Meters Horizontais -->
+                <div class="vu-horizontal-area">
+                    <div class="vu-row">
+                        <span>L</span>
+                        <div class="vu-bar-bg"><div id="vu-fill-l" class="vu-bar-fill"></div></div>
+                    </div>
+                    <div class="vu-row">
+                        <span>R</span>
+                        <div class="vu-bar-bg"><div id="vu-fill-r" class="vu-bar-fill"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bloco NEXT -->
+            <div class="track-row">
+                <div class="badge">NEXT</div>
+                <div class="next-info">
+                    <div id="next-title" class="next-title">Aguardando próximo clipe...</div>
+                    <div id="next-artist" class="next-artist">---</div>
+                </div>
+            </div>
+
+            <!-- Histórico -->
+            <div class="history-section">
+                <div class="history-title">Últimos Clipes Tocados</div>
+                <ul id="history-list" class="history-list">
+                    <li class="history-item">Painel SOHO TV inicializado.</li>
+                </ul>
+            </div>
         </div>
-        <div class="status-badge">AO VIVO</div>
     </div>
 
     <script>
+        // Waveform Canvas Animado
+        const canvas = document.getElementById('waveform-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('waveform-container');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function animateVisualizers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2.0;
+            ctx.strokeStyle = '#39ff14';
+            ctx.beginPath();
+            let time = Date.now() / 100;
+            for(let x = 0; x < canvas.width; x += 2) {
+                let y = (canvas.height / 2) + Math.sin(x * 0.05 + time) * (Math.sin(x * 0.02) * 6 + 3);
+                if(x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Animação dinâmica dos VU-Meters horizontais
+            let randL = Math.random() * 60 + 20;
+            let randR = Math.random() * 60 + 20;
+            document.getElementById('vu-fill-l').style.width = randL + '%';
+            document.getElementById('vu-fill-r').style.width = randR + '%';
+
+            requestAnimationFrame(animateVisualizers);
+        }
+        requestAnimationFrame(animateVisualizers);
+
+        // Leitura dos XMLs do Jazler
         const xmlNow = 'https://soho.ct.ws/NowOnAir.xml';
+        const xmlNext = 'https://soho.ct.ws/AirPlayNext.xml';
+        const xmlHistory = 'https://soho.ct.ws/AirPlayHistory.xml';
 
         async function updateDashboard() {
             const ts = new Date().getTime();
             try {
-                const response = await fetch(`${xmlNow}?t=${ts}`);
-                const data = await response.text();
+                const [resNow, resNext, resHistory] = await Promise.all([
+                    fetch(`${xmlNow}?t=${ts}`).catch(() => null),
+                    fetch(`${xmlNext}?t=${ts}`).catch(() => null),
+                    fetch(`${xmlHistory}?t=${ts}`).catch(() => null)
+                ]);
                 const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data, "text/xml");
-                
-                const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
-                if (songNode) {
-                    const title = songNode.getAttribute('title') || "---";
-                    const artist = songNode.getElementsByTagName('Artist')[0]?.getAttribute('name') || "---";
-                    
-                    document.getElementById('soho-title').textContent = title;
-                    document.getElementById('soho-artist').textContent = artist;
+
+                if (resNow && resNow.ok) {
+                    const xmlDoc = parser.parseFromString(await resNow.text(), "text/xml");
+                    const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
+                    if (songNode) {
+                        document.getElementById('soho-title').textContent = songNode.getAttribute('title') || "---";
+                        document.getElementById('soho-artist').textContent = songNode.getElementsByTagName('Artist')[0]?.getAttribute('name') || "---";
+                    }
                 }
-            } catch (e) {
-                console.log("Aguardando sincronização com Jazler...");
-            }
+
+                if (resNext && resNext.ok) {
+                    const xmlDocNext = parser.parseFromString(await resNext.text(), "text/xml");
+                    const nextSong = xmlDocNext.querySelector('Song');
+                    if (nextSong) {
+                        document.getElementById('next-title').textContent = nextSong.getAttribute('title') || "---";
+                        document.getElementById('next-artist').textContent = nextSong.getElementsByTagName('Artist')[0]?.getAttribute('name') || "---";
+                    }
+                }
+
+                if (resHistory && resHistory.ok) {
+                    const xmlDocHist = parser.parseFromString(await resHistory.text(), "text/xml");
+                    const songs = xmlDocHist.querySelectorAll('Song');
+                    const historyList = document.getElementById('history-list');
+                    if (songs.length > 0) {
+                        let html = '';
+                        let count = 0;
+                        for (let i = songs.length - 1; i >= 0 && count < 8; i--) {
+                            let s = songs[i];
+                            let t = s.getAttribute('title') || "---";
+                            let ar = s.getElementsByTagName('Artist')[0]?.getAttribute('name') || "";
+                            let timeStr = s.getAttribute('time') || "";
+                            html += `<li class="history-item"><span class="hist-time">${timeStr}</span><strong>${t}</strong> &nbsp;-&nbsp; ${ar}</li>`;
+                            count++;
+                        }
+                        historyList.innerHTML = html;
+                    }
+                }
+            } catch (e) {}
         }
         setInterval(updateDashboard, 3000);
         updateDashboard();
