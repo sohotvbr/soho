@@ -36,7 +36,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        /* Container do Player de Vídeo Principal */
         .video-wrapper {
             width: 100%;
             aspect-ratio: 16 / 9;
@@ -49,7 +48,6 @@
             width: 100%; height: 100%; border: none;
         }
 
-        /* Painel Principal SOHO TV */
         .dashboard {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
@@ -87,7 +85,6 @@
         .artist { color: #aaa; font-size: 14px; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
         .title { color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; text-shadow: 1px 1px 2px #000; }
 
-        /* VU-Meters Horizontais Charmosos */
         .vu-horizontal-area {
             display: flex;
             flex-direction: column;
@@ -122,7 +119,6 @@
             transition: width 0.1s ease;
         }
 
-        /* Waveform Estilizado */
         .soho-waveform {
             height: 25px;
             background-color: #080808;
@@ -135,7 +131,6 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         }
 
-        /* Bloco NEXT */
         .track-row {
             display: flex;
             border-top: 1px solid var(--border-color);
@@ -151,7 +146,6 @@
         .next-title { font-size: 14px; font-weight: bold; color: #ddd; text-transform: uppercase; }
         .next-artist { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
 
-        /* Histórico */
         .history-section { padding: 12px 15px; background-color: var(--panel-bg); }
         .history-title { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
         .history-list { list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto; }
@@ -176,8 +170,8 @@
 
             <div class="soho-player-body">
                 <div class="info-track">
-                    <div id="soho-artist" class="artist">AGUARDANDO SINAL...</div>
-                    <div id="soho-title" class="title">SOHO TV NO AR</div>
+                    <div id="soho-artist" class="artist">CONECTANDO AO JAZLER...</div>
+                    <div id="soho-title" class="title">AGUARDANDO DADOS...</div>
                     
                     <div class="soho-waveform" id="waveform-container">
                         <canvas id="waveform-canvas"></canvas>
@@ -217,7 +211,6 @@
     </div>
 
     <script>
-        // Waveform Canvas Animado
         const canvas = document.getElementById('waveform-canvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('waveform-container');
@@ -242,7 +235,6 @@
             }
             ctx.stroke();
 
-            // Animação dinâmica dos VU-Meters horizontais
             let randL = Math.random() * 60 + 20;
             let randR = Math.random() * 60 + 20;
             document.getElementById('vu-fill-l').style.width = randL + '%';
@@ -252,41 +244,52 @@
         }
         requestAnimationFrame(animateVisualizers);
 
-        // Leitura dos XMLs do Jazler
-        const xmlNow = 'https://soho.ct.ws/NowOnAir.xml';
-        const xmlNext = 'https://soho.ct.ws/AirPlayNext.xml';
-        const xmlHistory = 'https://soho.ct.ws/AirPlayHistory.xml';
+        // URLs dos XMLs com Proxy CORS para contornar o bloqueio do GitHub Pages
+        const getProxiedUrl = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        
+        const xmlNow = getProxiedUrl('https://soho.ct.ws/NowOnAir.xml');
+        const xmlNext = getProxiedUrl('https://soho.ct.ws/AirPlayNext.xml');
+        const xmlHistory = getProxiedUrl('https://soho.ct.ws/AirPlayHistory.xml');
 
         async function updateDashboard() {
             const ts = new Date().getTime();
             try {
                 const [resNow, resNext, resHistory] = await Promise.all([
-                    fetch(`${xmlNow}?t=${ts}`).catch(() => null),
-                    fetch(`${xmlNext}?t=${ts}`).catch(() => null),
-                    fetch(`${xmlHistory}?t=${ts}`).catch(() => null)
+                    fetch(`${xmlNow}&t=${ts}`).catch(() => null),
+                    fetch(`${xmlNext}&t=${ts}`).catch(() => null),
+                    fetch(`${xmlHistory}&t=${ts}`).catch(() => null)
                 ]);
                 const parser = new DOMParser();
 
                 if (resNow && resNow.ok) {
-                    const xmlDoc = parser.parseFromString(await resNow.text(), "text/xml");
-                    const songNode = xmlDoc.querySelector('Event[status="happening"] Song') || xmlDoc.querySelector('Song');
+                    const xmlText = await resNow.text();
+                    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                    const songNode = xmlDoc.querySelector('Event[status="happening"] Song');
                     if (songNode) {
-                        document.getElementById('soho-title').textContent = songNode.getAttribute('title') || "---";
-                        document.getElementById('soho-artist').textContent = songNode.getElementsByTagName('Artist')[0]?.getAttribute('name') || "---";
+                        const title = songNode.getAttribute('title') || "---";
+                        const artistNode = songNode.querySelector('Artist');
+                        const artist = artistNode ? artistNode.getAttribute('name') : "---";
+                        document.getElementById('soho-title').textContent = title;
+                        document.getElementById('soho-artist').textContent = artist;
                     }
                 }
 
                 if (resNext && resNext.ok) {
-                    const xmlDocNext = parser.parseFromString(await resNext.text(), "text/xml");
+                    const xmlText = await resNext.text();
+                    const xmlDocNext = parser.parseFromString(xmlText, "text/xml");
                     const nextSong = xmlDocNext.querySelector('Song');
                     if (nextSong) {
-                        document.getElementById('next-title').textContent = nextSong.getAttribute('title') || "---";
-                        document.getElementById('next-artist').textContent = nextSong.getElementsByTagName('Artist')[0]?.getAttribute('name') || "---";
+                        const nextTitle = nextSong.getAttribute('title') || "---";
+                        const nextArtistNode = nextSong.querySelector('Artist');
+                        const nextArtist = nextArtistNode ? nextArtistNode.getAttribute('name') : "---";
+                        document.getElementById('next-title').textContent = nextTitle;
+                        document.getElementById('next-artist').textContent = nextArtist;
                     }
                 }
 
                 if (resHistory && resHistory.ok) {
-                    const xmlDocHist = parser.parseFromString(await resHistory.text(), "text/xml");
+                    const xmlText = await resHistory.text();
+                    const xmlDocHist = parser.parseFromString(xmlText, "text/xml");
                     const songs = xmlDocHist.querySelectorAll('Song');
                     const historyList = document.getElementById('history-list');
                     if (songs.length > 0) {
@@ -295,15 +298,19 @@
                         for (let i = songs.length - 1; i >= 0 && count < 8; i--) {
                             let s = songs[i];
                             let t = s.getAttribute('title') || "---";
-                            let ar = s.getElementsByTagName('Artist')[0]?.getAttribute('name') || "";
-                            let timeStr = s.getAttribute('time') || "";
+                            let arNode = s.querySelector('Artist');
+                            let ar = arNode ? arNode.getAttribute('name') : "";
+                            let infoNode = s.querySelector('Info');
+                            let timeStr = infoNode ? infoNode.getAttribute('StartTime') : "";
                             html += `<li class="history-item"><span class="hist-time">${timeStr}</span><strong>${t}</strong> &nbsp;-&nbsp; ${ar}</li>`;
                             count++;
                         }
                         historyList.innerHTML = html;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Erro ao ler os XMLs via proxy CORS:", e);
+            }
         }
         setInterval(updateDashboard, 3000);
         updateDashboard();
